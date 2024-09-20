@@ -1,7 +1,7 @@
 // Import the Task model for interacting with the database
 import { Task } from "../models/TaskModel.js";
 
-export const createTask = async (req, res) => {
+export const deleteIndividualTask = async (req, res) => {
   const { id } = req.params;
   try {
     // Attempt to create a new task in the database using the received data
