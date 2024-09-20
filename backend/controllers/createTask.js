@@ -1,3 +1,5 @@
+import { Task } from "../models/TaskModel.js";
+
 export const createTask = async (req, res) => {
   const data = req.body; // Extract the task data from the request body
 
