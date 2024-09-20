@@ -72,16 +72,26 @@ The backend is built using Node.js and Express, with MongoDB as the database for
    ```bash
    cd backend
    ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file with your MongoDB URI:
+2. Create a `.env` file with your MongoDB URI:
    ```plaintext
    MONGO_URI=<your-mongodb-uri>
    FRONTEND_URI=<your-frontend-url>
    ```
-4. Start the server:
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+   (OR)
+   Build & Spin up the Docker image:
+
+   ```bash
+   docker build -t task-manager .
+   docker run -p -d 3000:3000 task-manager
+   ```
+
+4. Start the server(If not using docker):
    ```bash
    node index.js
    ```
