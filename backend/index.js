@@ -17,7 +17,7 @@ const port = 3000;
 // Configure CORS middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URI || "http://localhost:5173", // Allow requests from this origin
+    origin: process.env.FRONTEND_URI, // Allow requests from this origin
     credentials: true, // Allow credentials to be included in requests
   })
 );

@@ -43,11 +43,15 @@ The frontend is built using React and TypeScript, leveraging Material-UI for a c
    git clone https://github.com/D-pixel-crime/Task-Manager.git
    cd frontend
    ```
-2. Install dependencies:
+2. Create a `.env` file with for backend url:
+   ```plaintext
+   VITE_BACKEND_URI = <your-backend-url>
+   ```
+3. Install dependencies:
    ```bash
    npm install
    ```
-3. Start the development server:
+4. Start the development server:
    ```bash
    npm run dev
    ```
@@ -79,7 +83,7 @@ The backend is built using Node.js and Express, with MongoDB as the database for
    ```
 4. Start the server:
    ```bash
-   npm start
+   node index.js
    ```
 
 ## API Endpoints 📡
