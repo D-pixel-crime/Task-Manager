@@ -2,7 +2,7 @@ import { DateTimePicker } from "@mui/x-date-pickers";
 import MainContainer from "../containers/MainContainer";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import * as React from "react";
 import Snackbar from "@mui/material/Snackbar";
 import Fade from "@mui/material/Fade";
@@ -11,13 +11,15 @@ import { TransitionProps } from "@mui/material/transitions";
 import { Alert, AlertTitle } from "@mui/material";
 import axios from "axios";
 import { InfinitySpin } from "react-loader-spinner";
+import { useParams } from "react-router-dom";
 
 function SlideTransition(props: SlideProps) {
   return <Slide {...props} direction="up" />;
 }
 
-const CreateTask = () => {
+const UpdateTask = () => {
   const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const { id } = useParams();
 
   const [details, setDetails] = useState({
     taskName: "",
@@ -70,12 +72,24 @@ const CreateTask = () => {
   React.useLayoutEffect(() => {
     const connectToBackend = async () => {
       try {
-        await axios.get(`${import.meta.env.VITE_BACKEND_URI}`, {
-          withCredentials: true,
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URI}/task/${id}`,
+          {
+            withCredentials: true,
+          }
+        );
+
+        setDetails({
+          taskName: data.task.taskName,
+          projectName: data.task.projectName,
+          description: data.task.description,
+          deadline: dayjs(data.task.deadline),
+          taskPriority: data.task.taskPriority,
+          taskStatus: data.task.taskStatus,
         });
-        setIsSuccess({ status: "success", message: "Backend Connected!" });
+        setIsSuccess({ status: "success", message: "Fetched Details!" });
       } catch (error) {
-        setIsSuccess({ status: "error", message: "Backend not connected!" });
+        setIsSuccess({ status: "error", message: "Cannot Fetch Details!" });
       } finally {
         setIsBackendConnected(true);
         handleClick(SlideTransition)();
@@ -85,6 +99,7 @@ const CreateTask = () => {
     connectToBackend();
   }, []);
 
+  // Update handler
   const handleSubmit = async () => {
     if (
       !details.taskName ||
@@ -103,17 +118,17 @@ const CreateTask = () => {
       taskName: details.taskName,
       projectName: details.projectName,
       description: details.description,
-      deadline: details.deadline!.toDate() || Date.now(),
+      deadline: details.deadline!.toDate() || Date.now() + 86400000,
       taskPriority: details.taskPriority,
       taskStatus: details.taskStatus,
     };
     try {
       await axios.post(
-        `${import.meta.env.VITE_BACKEND_URI}/create-task`,
+        `${import.meta.env.VITE_BACKEND_URI}/update-task/${id}`,
         data,
         { withCredentials: true }
       );
-      setIsSuccess({ status: "success", message: "Task Created Successfully" });
+      setIsSuccess({ status: "success", message: "Task Updated Successfully" });
       setDetails({
         taskName: "",
         projectName: "",
@@ -125,17 +140,18 @@ const CreateTask = () => {
     } catch (error: any) {
       setIsSuccess({
         status: "error",
-        message: error.message || error.error || "Error Creating Task",
+        message: error.message || error.error || "Error Updating Task",
       });
     } finally {
       handleClick(SlideTransition)();
+      window.location.href = "/task-list";
     }
   };
 
   return !isBackendConnected ? (
     <main className="flex-center flex-col bg-slate-900/80 text-white h-screen w-screen">
       <InfinitySpin color="violet" />
-      Spinning up Backend...
+      Fetching Data...
     </main>
   ) : (
     <MainContainer>
@@ -245,7 +261,7 @@ const CreateTask = () => {
               type="submit"
               className="px-2 shadow shadow-green-700 tracking-[0.1rem] mt-2 py-2 flex-center gap-1 font-semibold rounded-md bg-green-500 text-white border-2 border-green-500 hover:text-green-600 hover:bg-transparent transition"
             >
-              Create task
+              Update task
               <Plus />
             </button>
           </form>
@@ -270,4 +286,4 @@ const CreateTask = () => {
     </MainContainer>
   );
 };
-export default CreateTask;
+export default UpdateTask;

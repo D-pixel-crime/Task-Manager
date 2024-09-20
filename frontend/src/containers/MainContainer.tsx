@@ -7,15 +7,19 @@ interface mainContainerProps {
 }
 
 const MainContainer = ({ children }: mainContainerProps) => {
+  // State to manage the visibility of the sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
+    // Main container for the app with a minimum height and background color
     <main className="min-h-screen w-max-screen overflow-x-hidden bg-slate-200">
+      {/* Sidebar component with control over its open state */}
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
       />
 
+      {/* Button to open the sidebar, hidden if the sidebar is already open */}
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -25,11 +29,14 @@ const MainContainer = ({ children }: mainContainerProps) => {
           isSidebarOpen ? "hidden" : "visible"
         } shadow-md shadow-slate-500 transition`}
       >
+        {/* Icon for opening the sidebar */}
         <PanelLeftOpen width={40} height={40} />
       </button>
 
+      {/* Section to render children components */}
       <section className="w-full h-full overflow-x-hidden">{children}</section>
     </main>
   );
 };
+
 export default MainContainer;

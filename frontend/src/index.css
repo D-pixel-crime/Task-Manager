@@ -12,6 +12,7 @@
   letter-spacing: 0.025rem;
 }
 
+/* Custom tailwind classes */
 @layer utilities {
   .flex-center {
     @apply flex justify-center items-center;

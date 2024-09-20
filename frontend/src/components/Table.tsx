@@ -1,42 +1,170 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { ArrowDropDownIcon } from "@mui/x-date-pickers";
+import { Link } from "react-router-dom";
 import { Filter, Pen, Trash } from "lucide-react";
+import { TailSpin } from "react-loader-spinner";
 
 interface detailProps {
+  _id: string;
   projectName: string;
   taskName: string;
-  Description: string;
+  description: string;
   taskPriority: string;
   dueIn: string;
   taskStatus: string;
 }
 
-const Table = ({ data }: any) => {
-  const [details, setDetails] = useState<detailProps[]>([]);
+interface props {
+  data: detailProps[];
+  setIsSuccess: (any: any) => void;
+  showAlert: (any: any) => void;
+  SlideTransition: (any: any) => void;
+  handleSearch: () => void;
+}
 
+const Table = ({
+  data,
+  setIsSuccess,
+  showAlert,
+  SlideTransition,
+  handleSearch,
+}: props) => {
+  const [isUpdate, setIsUpdate] = useState(false); // State for managing update loading
+  const [details, setDetails] = useState<detailProps[]>([]); // State for task details
+
+  // Initialize details and checked items when data changes
   useEffect(() => {
-    setDetails(data || []);
-    setCheckedItems(new Array(data?.length || 0).fill(false)); // Update checkedItems based on new data
+    setDetails(data);
+    setCheckedItems(new Array(data?.length || 0).fill(false));
   }, [data]);
 
   const [checkedItems, setCheckedItems] = useState<boolean[]>(
     new Array(data?.length || 0).fill(false)
-  );
-  const [selectAll, setSelectAll] = useState(false);
+  ); // State for checked items
+  const [selectAll, setSelectAll] = useState(false); // State for select all checkbox
 
   const handleSelectAllChange = () => {
-    const newSelectAll = !selectAll;
+    const newSelectAll = !selectAll; // Toggle select all
     setSelectAll(newSelectAll);
-    setCheckedItems(new Array(details.length).fill(newSelectAll));
+    setCheckedItems(new Array(details.length).fill(newSelectAll)); // Update checked items based on select all
   };
 
   const handleCheckboxChange = (index: number) => {
     const updatedCheckedItems = [...checkedItems];
-    updatedCheckedItems[index] = !updatedCheckedItems[index];
+    updatedCheckedItems[index] = !updatedCheckedItems[index]; // Toggle individual checkbox
     setCheckedItems(updatedCheckedItems);
 
     const allChecked = updatedCheckedItems.every((item) => item);
-    setSelectAll(allChecked);
+    setSelectAll(allChecked); // Update select all based on individual checkboxes
+  };
+
+  const individualDelete = async (id: string) => {
+    setIsUpdate(true);
+    setTimeout(async () => {
+      try {
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URI}/delete/${id}`, {
+          withCredentials: true,
+        });
+
+        handleSearch(); // Refresh task list
+        setCheckedItems(new Array(details.length).fill(false));
+        setSelectAll(false);
+
+        setIsSuccess({
+          status: "warning",
+          message: "Task Deleted Successfully!",
+        });
+      } catch (error: any) {
+        setIsSuccess({
+          status: "error",
+          message:
+            error?.message ||
+            error?.response?.data?.message ||
+            "Error While Deleting!",
+        });
+      } finally {
+        showAlert(SlideTransition);
+        setIsUpdate(false);
+      }
+    }, 1000); // Simulated delay for demonstration
+  };
+
+  const deleteTasks = async () => {
+    setIsUpdate(true);
+    setTimeout(async () => {
+      try {
+        const updatedTasks = details.filter((_, index) => checkedItems[index]);
+
+        await axios.post(
+          `${import.meta.env.VITE_BACKEND_URI}/delete-tasks`,
+          updatedTasks,
+          { withCredentials: true }
+        );
+
+        handleSearch(); // Refresh task list
+        setCheckedItems(new Array(details.length).fill(false));
+        setSelectAll(false);
+
+        setIsSuccess({
+          status: "warning",
+          message: "Tasks Deleted Successfully!",
+        });
+      } catch (error: any) {
+        setIsSuccess({
+          status: "error",
+          message:
+            error?.message ||
+            error?.response?.data?.message ||
+            "Error While Deleting!",
+        });
+      } finally {
+        showAlert(SlideTransition);
+        setIsUpdate(false);
+      }
+    }, 1000);
+  };
+
+  const handleUpdate = () => {
+    setIsUpdate(true);
+    setTimeout(async () => {
+      try {
+        const updatedTasks = details.map((task, index) => {
+          if (checkedItems[index]) {
+            return {
+              _id: task._id,
+              taskStatus: task.taskStatus,
+            };
+          }
+          return task;
+        });
+
+        await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URI}/update-tasks`,
+          updatedTasks,
+          { withCredentials: true }
+        );
+        handleSearch(); // Refresh task list
+        setCheckedItems(new Array(details.length).fill(false));
+        setSelectAll(false);
+
+        setIsSuccess({
+          status: "success",
+          message: "Tasks Updated Successfully!",
+        });
+      } catch (error: any) {
+        setIsSuccess({
+          status: "error",
+          message:
+            error?.message ||
+            error?.response?.data?.message ||
+            "Error While Updating!",
+        });
+      } finally {
+        showAlert(SlideTransition);
+        setIsUpdate(false);
+      }
+    }, 1000);
   };
 
   return (
@@ -49,7 +177,7 @@ const Table = ({ data }: any) => {
             id="select-all"
             style={{ width: "20px", height: "20px" }}
             checked={selectAll}
-            onChange={handleSelectAllChange}
+            onChange={handleSelectAllChange} // Handle select all change
           />
           Select All
         </span>
@@ -67,9 +195,9 @@ const Table = ({ data }: any) => {
           <h2>Due In</h2>
           <h2>Task Status</h2>
         </div>
-        {details.map((task: any, index: number) => (
+        {details?.map((task: detailProps, index: number) => (
           <div
-            key={index}
+            key={task._id}
             className={`grid grid-cols-6 text-center py-2 border-b-2 ${
               index <= details.length - 1 ? "border-b-slate-200" : ""
             } text-slate-500`}
@@ -81,98 +209,140 @@ const Table = ({ data }: any) => {
                 id={`select-${index}`}
                 style={{ width: "20px", height: "20px" }}
                 checked={checkedItems[index]}
-                onChange={() => handleCheckboxChange(index)}
+                onChange={() => handleCheckboxChange(index)} // Handle individual checkbox change
               />
-              {task.projectName}
+              {task.projectName || "N/A"}
             </p>
-            <p className="flex-center">{task.taskName}</p>
+            <p className="flex-center">{task.taskName || "N/A"}</p>
             <p className="flex-center">
-              {task.Description.substring(0, 30)}...
+              {task.description?.substring(0, 30) || "N/A"}...
             </p>
             <p className="flex-center">
               <span className="w-fit h-fit py-1 px-2 rounded-3xl bg-slate-200">
-                {task.taskPriority}
+                {task.taskPriority || "N/A"}
               </span>
             </p>
-            <p className="flex-center">{task.dueIn}</p>
+            <p className="flex-center">{task.dueIn || "N/A"} hours</p>
             <p className="flex-center flex-col">
               <span className="flex-center cursor-pointer bg-slate-200 px-2 py-2 rounded-3xl outline-none appearance-none">
                 <select
                   name="task-status"
                   id="task-status"
                   className="bg-slate-200 px-1 cursor-pointer outline-none appearance-none w-full"
-                  value={task.taskStatus || "Not Started"} // Fallback value
+                  value={task.taskStatus || "Not Started"}
                   onChange={(e) => {
                     setDetails((prevDetails) => {
                       const newDetails = [...prevDetails];
-                      newDetails[index].taskStatus = e.target.value;
+                      if (newDetails[index]) {
+                        newDetails[index].taskStatus = e.target.value;
+                      }
                       return newDetails;
+                    });
+                    setCheckedItems((prevCheckedItems) => {
+                      const newCheckedItems = [...prevCheckedItems];
+                      newCheckedItems[index] = true;
+                      return newCheckedItems;
                     });
                   }}
                 >
                   <option value="Not Started">Not Started</option>
-                  <option value="In-Progress">In-Progress</option>
                   <option value="Completed">Completed</option>
+                  <option value="Pending">Pending</option>
                 </select>
                 <ArrowDropDownIcon className="w-fit" />
               </span>
               <span className="flex-center gap-4 mt-2">
-                <Pen className="cursor-pointer hover:text-blue-600 transition" />
-                <Trash className="cursor-pointer hover:text-red-600 transition" />
+                <Link to={`/update-task/${task._id}`} className="w-fit">
+                  <Pen className="cursor-pointer hover:text-blue-600 transition" />
+                </Link>
+                <Trash
+                  className="cursor-pointer hover:text-red-600 transition"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    individualDelete(task._id); // Handle individual delete
+                  }}
+                />
               </span>
             </p>
           </div>
         ))}
       </div>
-      {checkedItems.some((item) => item) && (
-        <div className="flex justify-start w-full mt-5 px-5 gap-5">
-          <button
-            className=""
-            onClick={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <span className="flex-center cursor-pointer bg-slate-600 px-2 py-2 text-white rounded-3xl outline-none appearance-none">
-              <select
-                name="task-status"
-                id="task-status"
-                className="bg-slate-600 px-1 cursor-pointer outline-none appearance-none w-full"
-                value={details[0].taskStatus}
-                onChange={(e) => {
-                  setDetails((prevDetails) => {
-                    const newDetails = [...prevDetails];
-                    newDetails.forEach((detail) => {
-                      detail.taskStatus = e.target.value;
-                    });
-                    return newDetails;
+      <div className="flex justify-start w-full mt-5 px-5 gap-5">
+        <button
+          className=""
+          onClick={(e) => {
+            e.preventDefault();
+          }}
+        >
+          <span className="flex-center cursor-pointer bg-slate-600 px-2 py-2 text-white rounded-3xl outline-none appearance-none">
+            <select
+              name="task-status"
+              id="task-status"
+              className="bg-slate-600 px-1 cursor-pointer outline-none appearance-none w-full"
+              value={details[0]?.taskStatus || "Not Started"}
+              disabled={
+                checkedItems.every((item) => !item) ||
+                checkedItems.length === 0 ||
+                isUpdate
+              }
+              onChange={(e) => {
+                setDetails((prevDetails) => {
+                  const newDetails = [...prevDetails];
+                  newDetails.forEach((detail) => {
+                    detail.taskStatus = e.target.value;
                   });
-                }}
-              >
-                <option value="Completed">Completed</option>
-                <option value="In-Progress">In-Progress</option>
-                <option value="Not Started">Not Started</option>
-              </select>
-              <ArrowDropDownIcon className="w-fit" />
-            </span>
-          </button>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-            }}
-            className="px-2 py-1 font-semibold rounded-md bg-indigo-500 text-white border-2 border-indigo-500 hover:text-indigo-600 hover:bg-transparent transition"
-          >
-            Apply Changes
-          </button>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-            }}
-            className="px-2 flex-center gap-1 tracking-[0.15rem] py-1 font-semibold rounded-md bg-red-500 text-white border-2 border-red-500 hover:text-red-600 hover:bg-transparent transition"
-          >
-            DELETE
-          </button>
-        </div>
-      )}
+                  return newDetails;
+                });
+              }}
+            >
+              <option value="Not Started">Not Started</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <ArrowDropDownIcon className="w-fit" />
+          </span>
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            handleUpdate(); // Handle batch update
+          }}
+          className={`px-2 py-1 font-semibold rounded-md ${
+            isUpdate ? "bg-transparent" : "bg-indigo-500"
+          } text-white border-2 border-indigo-500 hover:text-indigo-600 hover:bg-transparent transition`}
+          disabled={
+            checkedItems.every((item) => !item) ||
+            checkedItems.length === 0 ||
+            isUpdate
+          }
+        >
+          {isUpdate ? (
+            <TailSpin width={20} height={20} color="indigo" />
+          ) : (
+            "Apply Changes"
+          )}
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            deleteTasks(); // Handle bulk delete
+          }}
+          className={`px-2 py-1 font-semibold rounded-md ${
+            isUpdate ? "bg-transparent" : "bg-red-500"
+          } text-white border-2 border-red-500 hover:text-red-600 hover:bg-transparent transition`}
+          disabled={
+            checkedItems.every((item) => !item) ||
+            checkedItems.length === 0 ||
+            isUpdate
+          }
+        >
+          {isUpdate ? (
+            <TailSpin width={20} height={20} color="red" />
+          ) : (
+            "DELETE"
+          )}
+        </button>
+      </div>
     </div>
   );
 };
